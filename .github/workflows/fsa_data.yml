@@ -1,0 +1,40 @@
+name: Fetch latest UK data
+
+on:
+  schedule:
+    - cron:  '25,55 * * * *'
+
+jobs:
+  scheduled:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out this repo
+      uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+    - uses: actions/cache@v1
+      name: Configure pip caching
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Install Python dependencies
+      run: |
+        pip install -r requirements.txt
+    - name: Fetch latest data
+      run: |-
+        mkdir -p raw_data && cd raw_data
+        conditional-get --etags ../etags.json -v https://ratings.food.gov.uk/open-data/en-gb
+        mv en-gb index.html
+        python ../scripts/extract_xml.py index.html
+    - name: Commit and push UK data if it changed
+      run: |-
+        git config user.name "Automated"
+        git config user.email "actions@users.noreply.github.com"
+        git add -A
+        timestamp=$(date -u)
+        git commit -m "Latest UK data: ${timestamp}" || exit 0
+        git push
