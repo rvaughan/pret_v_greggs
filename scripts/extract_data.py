@@ -16,6 +16,7 @@ if __name__ == "__main__":
 
     today = datetime.today().strftime('%Y-%m-%d')
 
+    all_businesses = []
     businesses = []
 
     for filename in onlyfiles:
@@ -27,11 +28,10 @@ if __name__ == "__main__":
                 include = False
                 for node in child:
                     if node.tag == 'BusinessName':
+                        business['name'] = node.text
                         if 'Greggs' in node.text:
-                            business['name'] = node.text
                             include = True
                         elif 'Pret-A-Manger' in node.text:
-                            business['name'] = node.text
                             include = True
                     elif node.tag == 'FHRSID':
                         business['id'] = int(node.text)
@@ -53,6 +53,8 @@ if __name__ == "__main__":
                 if include:
                     businesses.append(business)
 
+                all_businesses.append(business)
+
     csv_columns = ['id', 'name', 'local_area_code', 'local_area_name', 'latitude', 'longitude', 'rated', 'rating']
     csv_file = "{}.csv".format(today)
     try:
@@ -60,6 +62,16 @@ if __name__ == "__main__":
             writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
             writer.writeheader()
             for data in businesses:
+                writer.writerow(data)
+    except IOError:
+        print("I/O error")
+
+    csv_file = "all/{}.csv".format(today)
+    try:
+        with open(csv_file, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+            writer.writeheader()
+            for data in all_businesses:
                 writer.writerow(data)
     except IOError:
         print("I/O error")
